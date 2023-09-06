@@ -31,11 +31,11 @@ type osql struct {
 type Option struct {
 	Enabled    bool
 	DriverName string
-	Host       string
-	Port       string
-	User       string
-	Password   string
-	Db         string
+	Host       secretstring
+	Port       secretstring
+	User       secretstring
+	Password   secretstring
+	Db         secretstring
 	Connection ConnectionOpt
 }
 
@@ -55,7 +55,7 @@ func Init(opt Option) OSql {
 		opt: opt,
 	}
 	if err := osql.initDB(); err != nil {
-		log.Fatalf("failed init db. err: %v", err)
+		log.Fatalf("[osql] failed init db. err: %v", err)
 	}
 
 	return osql

@@ -1,10 +1,19 @@
 package logger
 
 import (
+	"context"
+	"io"
 	"os"
 	"sync"
 
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	infoLogger string = `Logger:`
+	errLogger  string = `%s Logger Error`
+	OK         string = "[OK]"
+	FAILED     string = "[FAILED]"
 )
 
 var Log Logger
@@ -12,113 +21,94 @@ var Log Logger
 var once = &sync.Once{}
 
 type Logger interface {
-	Debug(args ...interface{})
-	Debugf(format string, args ...interface{})
-	Info(args ...interface{})
-	Infof(format string, args ...interface{})
-	Warn(args ...interface{})
-	Warnf(format string, args ...interface{})
-	Error(args ...interface{})
-	Errorf(format string, args ...interface{})
-	Fatal(args ...interface{})
-	Fatalf(format string, args ...interface{})
+	SetOption(opt Option)
+	Stop()
+	PipeWriter() io.Writer
+	Trace(v ...interface{})
+	Debug(v ...interface{})
+	Info(v ...interface{})
+	Warn(v ...interface{})
+	Error(v ...interface{})
+	Fatal(v ...interface{})
+	TraceWithContext(ctx context.Context, v ...interface{})
+	DebugWithContext(ctx context.Context, v ...interface{})
+	InfoWithContext(ctx context.Context, v ...interface{})
+	WarnWithContext(ctx context.Context, v ...interface{})
+	ErrorWithContext(ctx context.Context, v ...interface{})
+	FatalWithContext(ctx context.Context, v ...interface{})
 }
 
 type logger struct {
-	log *logrus.Logger
+	mu     *sync.RWMutex
+	logger *logrus.Logger
+	entry  *logrus.Entry
+	opt    Option
+	file   *os.File
+	writer *io.PipeWriter
 }
 
-type Config struct {
-	Format string
-	Level  string
+type Option struct {
+	Level         string
+	Formatter     string
+	Output        string
+	LogOutputPath string
+	DefaultFields map[string]string
+	ContextFields map[string]string
 }
 
-func Init(cfg Config) {
+func Init(opt Option) {
 	once.Do(func() {
-		Log = New(cfg)
+		Log = New(opt)
 	})
 }
 
-func New(cfg Config) Logger {
-	log := logrus.New()
-	log.SetOutput(os.Stdout)
-	log.SetReportCaller(false)
-
-	// formatter
-	switch cfg.Format {
-	case "json":
-		log.SetFormatter(&logrus.JSONFormatter{})
-	default:
-		log.SetFormatter(&logrus.TextFormatter{
-			DisableColors:   false,
-			TimestampFormat: "2006-01-02 15:04:05.000",
-			FullTimestamp:   true,
-		})
+func New(opt Option) Logger {
+	log := &logger{
+		mu:     &sync.RWMutex{},
+		logger: logrus.New(),
+		entry:  logrus.WithFields(logrus.Fields{}),
+		opt:    opt,
 	}
+	log.logger.SetOutput(io.Discard)
+	log.setDefaultOptions()
+	log.applyOptions()
 
-	// level
-	switch cfg.Level {
-	case "panic":
-		log.SetLevel(logrus.PanicLevel)
-	case "fatal":
-		log.SetLevel(logrus.FatalLevel)
-	case "error":
-		log.SetLevel(logrus.ErrorLevel)
-	case "warn":
-		log.SetLevel(logrus.WarnLevel)
-	case "info":
-		log.SetLevel(logrus.InfoLevel)
-	case "debug":
-		log.SetLevel(logrus.DebugLevel)
-	case "trace":
-		log.SetLevel(logrus.TraceLevel)
-	default:
-		log.SetLevel(logrus.DebugLevel)
+	return log
+}
+
+func (l *logger) setDefaultOptions() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.opt.Output == "" {
+		//never put default to discard, error will not be displayed!
+		l.opt.Output = OutputStdout
 	}
-
-	logrus.Infof("%-7s %s", "Logger", "✅")
-
-	return &logger{
-		log: log,
+	if l.opt.Formatter == "" {
+		l.opt.Formatter = FormatText
+	}
+	if l.opt.Level == "" {
+		l.opt.Level = LevelTrace
 	}
 }
 
-func (l *logger) Debug(args ...interface{}) {
-	l.log.Debug(args...)
+func (l *logger) applyOptions() {
+	l.convertAndSetOutput()
+	l.convertAndSetFormatter()
+	l.convertAndSetLevel()
 }
 
-func (l *logger) Debugf(format string, args ...interface{}) {
-	l.log.Debugf(format, args...)
+func (l *logger) SetOption(opt Option) {
+	l.mu.Lock()
+	l.opt = opt
+	l.mu.Unlock()
+	l.applyOptions()
 }
 
-func (l *logger) Info(args ...interface{}) {
-	l.log.Info(args...)
-}
-
-func (l *logger) Infof(format string, args ...interface{}) {
-	l.log.Infof(format, args...)
-}
-
-func (l *logger) Warn(args ...interface{}) {
-	l.log.Warn(args...)
-}
-
-func (l *logger) Warnf(format string, args ...interface{}) {
-	l.log.Warnf(format, args...)
-}
-
-func (l *logger) Error(args ...interface{}) {
-	l.log.Error(args...)
-}
-
-func (l *logger) Errorf(format string, args ...interface{}) {
-	l.log.Errorf(format, args...)
-}
-
-func (l *logger) Fatal(args ...interface{}) {
-	l.log.Fatal(args...)
-}
-
-func (l *logger) Fatalf(format string, args ...interface{}) {
-	l.log.Fatalf(format, args...)
+func (l *logger) Stop() {
+	if l.writer != nil {
+		l.writer.Close()
+	}
+	if l.file != nil {
+		l.file.Close()
+	}
 }

@@ -2,18 +2,20 @@ package httpserver
 
 import (
 	"context"
+	"log"
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"runtime/debug"
+	"syscall"
 	"time"
-
-	"github.com/rs/zerolog/log"
 )
 
 type HttpServer interface {
 	Start() error
 	Stop(ctx context.Context) error
+	RunGracefuly() error
 }
 
 type httpServer struct {
@@ -50,13 +52,39 @@ func (s *httpServer) Start() error {
 
 	l, err := net.Listen("tcp", s.opt.Port)
 	if err != nil {
-		log.Fatal().Msgf("failed start http server. err=%s", err)
+		log.Fatalf("failed start http server. err=%s", err)
 		return err
 	}
-	log.Info().Int("pid", os.Getpid()).Str("go_version", buildInfo.GoVersion).Msgf("server running on port %s", s.opt.Port)
+	log.Printf("server running on port %s", s.opt.Port)
+	log.Printf("pid: %d", os.Getpid())
+	log.Printf("go_version: %s", buildInfo.GoVersion)
 	return s.server.Serve(l)
 }
 
 func (s *httpServer) Stop(ctx context.Context) error {
 	return s.server.Shutdown(ctx)
+}
+
+func (s *httpServer) RunGracefuly() error {
+	signalChannel := make(chan os.Signal, 1)
+	signal.Notify(signalChannel, os.Interrupt,
+		syscall.SIGTERM,
+		syscall.SIGHUP,
+		syscall.SIGQUIT,
+		syscall.SIGINT,
+	)
+
+	go s.Start()
+
+	sig := <-signalChannel // graceful shutdown
+	log.Printf("receiving terminate signal: %s", sig)
+	signal.Stop(signalChannel)
+	close(signalChannel)
+
+	if err := s.Stop(context.Background()); err != nil {
+		log.Printf("failed to stop http server: %v", err)
+		return err
+	}
+	log.Printf("http server stopped!")
+	return nil
 }
