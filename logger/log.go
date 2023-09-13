@@ -7,36 +7,36 @@ import (
 	"github.com/tuingking/sdkgo/appcontext"
 )
 
-func (l *logger) parseContextFields(ctx context.Context) *logrus.Entry {
-	entry := l.entry
+func (l *logger) parseContextFields(ctx context.Context) logrus.Fields {
+	fields := logrus.Fields{}
 	if ctx != nil {
 		for k, v := range l.opt.ContextFields {
 			if val := ctx.Value(v); val != nil {
-				entry = entry.WithField(k, val)
+				fields[k] = v
 			}
 		}
 
 		requestID := appcontext.GetAppRequestID(ctx)
 		if requestID != "" {
-			entry = entry.WithField("request_id", requestID)
+			fields["request_id"] = requestID
 		}
 
 		method := appcontext.GetRequestMethod(ctx)
 		if requestID != "" {
-			entry = entry.WithField("method", method)
+			fields["method"] = method
 		}
 
 		userID := appcontext.GetUserID(ctx)
 		if userID != 0 {
-			entry = entry.WithField("user_id", userID)
+			fields["user_id"] = userID
 		}
 
 		appName := appcontext.GetAppName(ctx)
 		if appName != "" {
-			entry = entry.WithField("app_name", appName)
+			fields["app_name"] = appName
 		}
 	}
-	return entry
+	return fields
 }
 
 func (l *logger) Trace(v ...interface{}) {
@@ -64,25 +64,25 @@ func (l *logger) Fatal(v ...interface{}) {
 }
 
 func (l *logger) TraceWithContext(ctx context.Context, v ...interface{}) {
-	l.parseContextFields(ctx).Trace(v...)
+	l.logger.WithFields(l.parseContextFields(ctx)).Trace(v...)
 }
 
 func (l *logger) DebugWithContext(ctx context.Context, v ...interface{}) {
-	l.parseContextFields(ctx).Debug(v...)
+	l.logger.WithFields(l.parseContextFields(ctx)).Debug(v...)
 }
 
 func (l *logger) InfoWithContext(ctx context.Context, v ...interface{}) {
-	l.parseContextFields(ctx).Info(v...)
+	l.logger.WithFields(l.parseContextFields(ctx)).Info(v...)
 }
 
 func (l *logger) WarnWithContext(ctx context.Context, v ...interface{}) {
-	l.parseContextFields(ctx).Warn(v...)
+	l.logger.WithFields(l.parseContextFields(ctx)).Warn(v...)
 }
 
 func (l *logger) ErrorWithContext(ctx context.Context, v ...interface{}) {
-	l.parseContextFields(ctx).Error(v...)
+	l.logger.WithFields(l.parseContextFields(ctx)).Error(v...)
 }
 
 func (l *logger) FatalWithContext(ctx context.Context, v ...interface{}) {
-	l.parseContextFields(ctx).Fatal(v...)
+	l.logger.WithFields(l.parseContextFields(ctx)).Fatal(v...)
 }

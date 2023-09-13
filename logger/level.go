@@ -39,25 +39,25 @@ func (l *logger) setLevelLogrus() {
 	switch l.opt.Level {
 	case LevelTrace:
 		lrLevel = logrus.TraceLevel
-		l.entry.Info(OK, infoLogger, LevelTraceMsg)
+		l.entry.Info(OK, infoLogger+"level:", LevelTraceMsg)
 	case LevelDebug:
 		lrLevel = logrus.DebugLevel
-		l.entry.Info(OK, infoLogger, LevelDebugMsg)
+		l.entry.Info(OK, infoLogger+"level:", LevelDebugMsg)
 	case LevelInfo:
 		lrLevel = logrus.InfoLevel
-		l.entry.Info(OK, infoLogger, LevelInfoMsg)
+		l.entry.Info(OK, infoLogger+"level:", LevelInfoMsg)
 	case LevelWarn:
 		lrLevel = logrus.WarnLevel
-		l.entry.Info(OK, infoLogger, LevelWarnMsg)
+		l.entry.Info(OK, infoLogger+"level:", LevelWarnMsg)
 	case LevelError:
 		lrLevel = logrus.ErrorLevel
-		l.entry.Info(OK, infoLogger, LevelErrorMsg)
+		l.entry.Info(OK, infoLogger+"level:", LevelErrorMsg)
 	case LevelFatal:
 		lrLevel = logrus.FatalLevel
-		l.entry.Info(OK, infoLogger, LevelFatalMsg)
+		l.entry.Info(OK, infoLogger+"level:", LevelFatalMsg)
 	case LevelPanic:
 		lrLevel = logrus.PanicLevel
-		l.entry.Info(OK, infoLogger, LevelPanicMsg)
+		l.entry.Info(OK, infoLogger+"level:", LevelPanicMsg)
 	default:
 		err := errors.Wrapf(ErrUnknownLevel, errLogger, FAILED)
 		l.entry.Panic(err)

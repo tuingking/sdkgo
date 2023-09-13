@@ -26,10 +26,10 @@ func (l *logger) convertAndSetFormatter() {
 	switch l.opt.Formatter {
 	case FormatText:
 		l.logger.SetFormatter(&logrus.TextFormatter{TimestampFormat: formatTimeMs})
-		l.entry.Info(OK, infoLogger, formatText)
+		l.entry.Info(OK, infoLogger+"formatter:", formatText)
 	case FormatJSON:
 		l.logger.SetFormatter(&logrus.JSONFormatter{TimestampFormat: formatTimeMs})
-		l.entry.Info(OK, infoLogger, formatJSON)
+		l.entry.Info(OK, infoLogger+"formatter:", formatJSON)
 	default:
 		l.entry.Panic(ErrUnknownFormat)
 	}

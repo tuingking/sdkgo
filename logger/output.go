@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"fmt"
 	"io"
 	"os"
 
@@ -20,7 +19,7 @@ const (
 )
 
 var (
-	errUnknownOutput = fmt.Errorf(`Unknown log Output`)
+	errUnknownOutput = errors.New(`Unknown log Output`)
 	ErrUnknownOutput = errors.Wrapf(errUnknownOutput, errLogger, FAILED)
 )
 
@@ -28,20 +27,19 @@ func (l *logger) convertAndSetOutput() {
 	switch l.opt.Output {
 	case OutputDiscard:
 		l.logger.SetOutput(io.Discard)
-		l.entry.Info(OK, infoLogger, outputDiscard)
+		l.entry.Info(OK, infoLogger+"output:", outputDiscard)
 	case OutputStdout:
 		l.logger.SetOutput(os.Stdout)
-		l.entry.Info(OK, infoLogger, outputStdout)
+		l.entry.Info(OK, infoLogger+"output:", outputStdout)
 	case OutputFile:
 		f, err := os.OpenFile(l.opt.LogOutputPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-		// f, err := os.OpenFile(l.opt.LogOutputPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
 		if err != nil {
 			err = errors.Wrapf(err, errLogger, FAILED)
 			l.entry.Panic(err)
 		}
 		l.file = f
-		l.logger.SetOutput(l.file)
-		l.entry.Info(OK, infoLogger, outputFile, l.opt.LogOutputPath)
+		l.logger.SetOutput(f)
+		l.entry.Info(OK, infoLogger+"output:", outputFile, l.opt.LogOutputPath)
 	default:
 		l.entry.Panic(ErrUnknownOutput)
 	}
