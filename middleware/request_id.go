@@ -9,18 +9,18 @@ import (
 	"github.com/tuingking/sdkgo/appcontext"
 )
 
-const prefix = "sdkgo"
-
-func RequestID(next http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		requestID := r.Header.Get(string(appcontext.RequestID))
-		if requestID == "" {
-			myid := uuid.New()
-			requestID = fmt.Sprintf("%s-%06d", prefix, myid)
+func RequestID(prefix string) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			requestID := r.Header.Get(string(appcontext.RequestID))
+			if requestID == "" {
+				myid := uuid.New().String()
+				requestID = fmt.Sprintf("%s-%s", prefix, myid)
+			}
+			ctx = context.WithValue(ctx, appcontext.RequestID, requestID)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		}
-		ctx = context.WithValue(ctx, appcontext.RequestID, requestID)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		return http.HandlerFunc(fn)
 	}
-	return http.HandlerFunc(fn)
 }
