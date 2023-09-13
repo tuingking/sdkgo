@@ -22,7 +22,7 @@ func (l *logger) parseContextFields(ctx context.Context) logrus.Fields {
 		}
 
 		method := appcontext.GetRequestMethod(ctx)
-		if requestID != "" {
+		if method != "" {
 			fields["method"] = method
 		}
 
@@ -34,6 +34,11 @@ func (l *logger) parseContextFields(ctx context.Context) logrus.Fields {
 		appName := appcontext.GetAppName(ctx)
 		if appName != "" {
 			fields["app_name"] = appName
+		}
+
+		packageName := appcontext.GetPackageName(ctx)
+		if packageName != "" {
+			fields["pkg"] = packageName
 		}
 	}
 	return fields

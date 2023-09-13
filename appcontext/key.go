@@ -9,4 +9,5 @@ const (
 	AppDebug      key = "x-app-debug"
 	UserID        key = `x-user-id`
 	RequestMethod key = `x-request-method`
+	PackageName   key = `x-package-name`
 )

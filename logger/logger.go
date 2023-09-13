@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
+	"github.com/tuingking/sdkgo/appcontext"
 )
 
 const (
@@ -60,6 +61,8 @@ func Init(opt Option) {
 	once.Do(func() {
 		Log = New(opt)
 	})
+	ctx := context.WithValue(context.Background(), appcontext.PackageName, "logger")
+	Log.InfoWithContext(ctx, "initialized")
 }
 
 func New(opt Option) Logger {

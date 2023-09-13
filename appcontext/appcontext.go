@@ -66,3 +66,16 @@ func GetAppName(ctx context.Context) string {
 	}
 	return ""
 }
+
+// SetPackageName - Setter context PackageName
+func SetPackageName(ctx context.Context, value string) context.Context {
+	return context.WithValue(ctx, PackageName, value)
+}
+
+// GetPackageName - Getter context PackageName
+func GetPackageName(ctx context.Context) string {
+	if v, ok := ctx.Value(PackageName).(string); ok {
+		return v
+	}
+	return ""
+}
